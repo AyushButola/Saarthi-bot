@@ -1,0 +1,44 @@
+# Environment variables
+.env
+
+# Virtual environment
+venv/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database files
+*.sqlite3
+
+# Log files
+*.log
+
+# Byte-compiled files
+*.pyc
+
+# Python cache directories
+__pycache__/
+
+# Localization files
+*.pot
+*.mo
+*.pyo
+
+# Migration files
+migrations/
+
+# Packaging files
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Test coverage files
+.coverage
+htmlcov/
+
+# OS generated files
+.DS_Store
