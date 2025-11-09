@@ -1,10 +1,16 @@
-from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram import Update, KeyboardButton, ReplyKeyboardMarkup,ReplyKeyboardRemove
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes,ConversationHandler
 import google.generativeai as genai
 import json
 import logging
 import requests  # <-- for sending data to Django
+
+
 from auth_manage import register_user, login_user, logout_user, get_auth_header
+from voice_mode import handle_voice_report, handle_location2
+
+
+
 from dotenv import load_dotenv
 import os
 
@@ -26,6 +32,36 @@ logging.basicConfig(
 # Initialize Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel("gemini-2.5-flash")
+
+
+from config_utils import get_language, set_language
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackQueryHandler
+
+async def setlang(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[
+        InlineKeyboardButton("🇬🇧 English", callback_data="lang_english"),
+        InlineKeyboardButton("🇮🇳 Hindi", callback_data="lang_hindi"),
+        InlineKeyboardButton("🔀 Hinglish", callback_data="lang_hinglish"),
+    ]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text("🌐 Choose bot language mode:", reply_markup=reply_markup)
+
+async def setlang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    mapping = {
+        "lang_english": "english",
+        "lang_hindi": "hindi",
+        "lang_hinglish": "hinglish"
+    }
+    lang = mapping.get(query.data, "english")
+    set_language(lang)
+    await query.edit_message_text(f"✅ Language mode set to *{lang}*", parse_mode="Markdown")
+
+
+
 
 # ============================================================
 # Gemini: Convert report text to JSON
@@ -212,14 +248,6 @@ async def logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
-from telegram.ext import (
-    CommandHandler,
-    MessageHandler,
-    ConversationHandler,
-    filters,
-    ContextTypes
-)
 
 (FIRST_NAME, LAST_NAME, EMAIL, PASSWORD, CONFIRM_PASSWORD,
  USER_TYPE, WHEELCHAIR, TACTILE, AUDIO) = range(9)
@@ -352,10 +380,16 @@ app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(registration_conversation)
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("sendlocation", sendlocation))
+app.add_handler(MessageHandler(filters.LOCATION, handle_location2))
 app.add_handler(MessageHandler(filters.LOCATION, handle_location))
 app.add_handler(CommandHandler("submitreport", submitreport))
 app.add_handler(CommandHandler("login", login))
 app.add_handler(CommandHandler("logout", logout))
+app.add_handler(MessageHandler(filters.VOICE & ~filters.COMMAND, handle_voice_report))
+app.add_handler(CommandHandler("setlang", setlang))
+app.add_handler(CallbackQueryHandler(setlang_callback))
+
+
 
 
 print("🤖 Bot running...")
