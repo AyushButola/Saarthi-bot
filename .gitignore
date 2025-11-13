@@ -27,6 +27,11 @@ __pycache__/
 *.mo
 *.pyo
 
+# Audio files
+*.mp3
+*.wav
+*.ogg
+
 # Migration files
 migrations/
 
